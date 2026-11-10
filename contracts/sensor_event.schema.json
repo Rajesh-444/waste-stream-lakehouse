@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Smart-bin sensor event",
+  "type": "object",
+  "required": ["event_id", "sensor_id", "event_time", "fill_percent", "temperature_c"],
+  "properties": {
+    "event_id": {"type": "string", "minLength": 1},
+    "sensor_id": {"type": "string", "minLength": 1},
+    "event_time": {"type": "string", "format": "date-time"},
+    "fill_percent": {"type": "number", "minimum": 0, "maximum": 100},
+    "temperature_c": {"type": "number", "minimum": -30, "maximum": 100},
+    "latitude": {"type": "number", "minimum": -90, "maximum": 90},
+    "longitude": {"type": "number", "minimum": -180, "maximum": 180}
+  },
+  "additionalProperties": false
+}
+

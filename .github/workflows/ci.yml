@@ -13,4 +13,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: PYTHONPATH=src python -m unittest discover -s tests -v
+      - run: PYTHONPATH=src python -m waste_lakehouse.pipeline --input data/sample_sensor_events.csv --output build
 

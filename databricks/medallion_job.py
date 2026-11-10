@@ -35,7 +35,12 @@ is_valid = (
     & F.col("longitude").between(-180, 180)
 )
 
-silver = bronze.filter(is_valid).dropDuplicates(["event_id"])
+silver = (
+    bronze.filter(is_valid)
+    .dropDuplicates(["event_id"])
+    .withColumn("latitude", F.round("latitude", 2))
+    .withColumn("longitude", F.round("longitude", 2))
+)
 quarantine = bronze.filter(~is_valid).withColumn("rejection_reason", F.lit("contract violation"))
 silver.write.format("delta").mode("append").save(f"{output_root}/silver/events")
 quarantine.write.format("delta").mode("append").save(f"{output_root}/quarantine/events")

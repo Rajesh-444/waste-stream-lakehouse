@@ -28,6 +28,22 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(len(accepted), 1)
         self.assertEqual(rejected[0]["errors"], ["duplicate event_id"])
 
+    def test_minimizes_precise_location_by_default(self):
+        accepted, _ = transform([VALID])
+        self.assertEqual(accepted[0].latitude, 17.3)
+        self.assertEqual(accepted[0].longitude, 78.4)
+
+        precise = {**VALID, "latitude": "17.385012", "longitude": "78.486712"}
+        accepted, _ = transform([precise])
+        self.assertEqual(accepted[0].latitude, 17.39)
+        self.assertEqual(accepted[0].longitude, 78.49)
+
+    def test_blocks_and_does_not_persist_unexpected_sensitive_field(self):
+        accepted, rejected = transform([{**VALID, "operator_email": "private@example.com"}])
+        self.assertEqual(accepted, [])
+        self.assertEqual(rejected[0]["errors"], ["unexpected field blocked: operator_email"])
+        self.assertNotIn("operator_email", rejected[0]["row"])
+
     def test_builds_daily_metrics(self):
         second = {**VALID, "event_id": "two", "fill_percent": "50"}
         events, _ = transform([VALID, second])

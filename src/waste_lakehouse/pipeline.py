@@ -10,6 +10,8 @@ from pathlib import Path
 from statistics import mean
 from typing import Iterable
 
+from .guardrails import DataSafetyPolicy
+
 
 @dataclass(frozen=True)
 class SensorEvent:
@@ -66,12 +68,19 @@ def validate(row: dict[str, str]) -> tuple[SensorEvent | None, list[str]]:
     ), []
 
 
-def transform(rows: Iterable[dict[str, str]]) -> tuple[list[SensorEvent], list[dict]]:
+def transform(
+    rows: Iterable[dict[str, str]], *, allow_precise_location: bool = False
+) -> tuple[list[SensorEvent], list[dict]]:
     accepted: list[SensorEvent] = []
     rejected: list[dict] = []
     seen: set[str] = set()
-    for row in rows:
+    policy = DataSafetyPolicy(allow_precise_location=allow_precise_location)
+    for source_row in rows:
+        row, safety_errors = policy.prepare(source_row)
         event, errors = validate(row)
+        errors = safety_errors + errors
+        if safety_errors:
+            event = None
         event_id = row.get("event_id", "")
         if event and event_id in seen:
             errors = ["duplicate event_id"]
@@ -111,12 +120,16 @@ def write_jsonl(path: Path, records: Iterable[dict]) -> None:
             stream.write(json.dumps(record, sort_keys=True) + "\n")
 
 
-def run(input_path: Path, output_path: Path) -> dict[str, int]:
+def run(
+    input_path: Path, output_path: Path, *, allow_precise_location: bool = False
+) -> dict[str, int]:
     with input_path.open(newline="", encoding="utf-8") as stream:
         raw = list(csv.DictReader(stream))
-    accepted, rejected = transform(raw)
+    policy = DataSafetyPolicy(allow_precise_location=allow_precise_location)
+    safe_bronze = [policy.prepare(row)[0] for row in raw]
+    accepted, rejected = transform(raw, allow_precise_location=allow_precise_location)
 
-    write_jsonl(output_path / "bronze" / "events.jsonl", raw)
+    write_jsonl(output_path / "bronze" / "events.jsonl", safe_bronze)
     write_jsonl(output_path / "silver" / "events.jsonl", (asdict(event) for event in accepted))
     write_jsonl(output_path / "quarantine" / "rejected.jsonl", rejected)
 
@@ -134,8 +147,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build a local medallion lakehouse")
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--allow-precise-location",
+        action="store_true",
+        help="Explicitly retain exact coordinates; disabled by default for privacy",
+    )
     args = parser.parse_args()
-    summary = run(args.input, args.output)
+    summary = run(args.input, args.output, allow_precise_location=args.allow_precise_location)
     print(json.dumps(summary, indent=2))
 
 

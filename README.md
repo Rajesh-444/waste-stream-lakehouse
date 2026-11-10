@@ -43,7 +43,19 @@ The repository also includes `databricks/medallion_job.py`, a PySpark implementa
 - fill percentage must be between 0 and 100
 - temperature must be between -30 and 100 C
 - duplicate `event_id` values are quarantined
-- rejected rows retain their raw values and validation reasons
+- rejected rows retain contract fields and validation reasons; unexpected fields are removed
+
+## AI and data safety guardrails
+
+| Control | Behavior |
+| --- | --- |
+| Contract allowlist | Blocks fields outside the declared sensor-event schema, preventing accidental PII propagation |
+| Location minimization | Rounds coordinates to two decimals before bronze or silver persistence by default |
+| Explicit override | Exact coordinates require the visible `--allow-precise-location` flag |
+| Quarantine | Invalid and duplicate events remain outside analytics tables with auditable reasons |
+| Human decision boundary | Gold alerts are decision-support signals; the pipeline does not automatically dispatch or penalize operators |
+
+The demo is safe by default. A production lakehouse should additionally enforce catalog permissions, encryption, retention policies, lineage, and human approval before operational automation.
 
 ## Recruiter walkthrough
 

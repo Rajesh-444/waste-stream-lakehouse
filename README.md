@@ -57,7 +57,7 @@ The repository also includes `databricks/medallion_job.py`, a PySpark implementa
 
 The demo is safe by default. A production lakehouse should additionally enforce catalog permissions, encryption, retention policies, lineage, and human approval before operational automation.
 
-## Recruiter walkthrough
+## Project walkthrough
 
 1. Start with `contracts/sensor_event.schema.json` to see the source contract.
 2. Read `pipeline.py` to follow validation, deduplication, and aggregation.

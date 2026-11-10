@@ -1,20 +1,25 @@
 # WasteStream Lakehouse
 
+[![CI](https://github.com/Rajesh-444/waste-stream-lakehouse/actions/workflows/ci.yml/badge.svg)](https://github.com/Rajesh-444/waste-stream-lakehouse/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![Apache Spark](https://img.shields.io/badge/Apache_Spark-E25A1C?style=flat-square&logo=apachespark&logoColor=white)
+![Databricks](https://img.shields.io/badge/Databricks-FF3621?style=flat-square&logo=databricks&logoColor=white)
+
 A contract-driven data pipeline for smart-bin telemetry. It turns noisy sensor events into a medallion-style lakehouse with immutable bronze records, validated silver events, quarantined failures, and gold operational metrics.
 
 ## The data problem
 
 IoT feeds arrive late, contain duplicate events, and sometimes report impossible values. A dashboard should never silently treat those records as truth. This project makes every quality decision auditable.
 
-```text
-CSV events
-   |
-   +--> bronze/events.jsonl          raw, append-friendly records
-   |
-   +--> silver/events.jsonl          typed, valid, deduplicated events
-   +--> quarantine/rejected.jsonl    rejected rows + explicit reasons
-   |
-   +--> gold/daily_metrics.csv       fill, temperature, and alert aggregates
+```mermaid
+flowchart LR
+    S[IoT sensor events] --> B[(Bronze raw events)]
+    B --> V{Contract validation}
+    V -->|Valid| D[Deduplicate]
+    V -->|Invalid| Q[(Quarantine + reasons)]
+    D --> S1[(Silver typed events)]
+    S1 --> A[Daily aggregation]
+    A --> G[(Gold operations metrics)]
 ```
 
 ## Run locally
